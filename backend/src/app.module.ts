@@ -12,22 +12,27 @@ import { FeedbackModule } from './feedback/feedback.module';
     TypeOrmModule.forRootAsync({
       useFactory: () => {
         const isProduction = process.env.NODE_ENV === 'production';
+        const databaseUrl = process.env.DATABASE_URL;
         
-        // If DATABASE_URL exists (Render), use it
-        if (process.env.DATABASE_URL) {
+        // If in production, use hardcoded Render database config
+        if (isProduction) {
           return {
             type: 'postgres' as const,
-            url: process.env.DATABASE_URL,
+            host: 'dpg-d3h78dvfte5s73cmvg3g-a.oregon-postgres.render.com', // UPDATE WITH YOUR ACTUAL REGION
+            port: 5432,
+            username: 'studentfeeback_user',
+            password: 'q72epzAxeHJhWTZNl5LRN0ydbqE37tux',
+            database: 'studentfeeback',
             ssl: {
               rejectUnauthorized: false,
             },
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: false, // IMPORTANT: false in production
+            synchronize: false,
             logging: true,
           };
         }
         
-        // Otherwise use individual environment variables (local development)
+        // Local development with individual environment variables
         return {
           type: 'postgres' as const,
           host: process.env.DB_HOST || 'localhost',
@@ -36,7 +41,7 @@ import { FeedbackModule } from './feedback/feedback.module';
           password: process.env.DB_PASSWORD || 'Biswa@711',
           database: process.env.DB_NAME || 'student_feedback_db',
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: !isProduction, // false in production
+          synchronize: !isProduction,
           logging: true,
         };
       },
