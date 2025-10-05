@@ -1,0 +1,422 @@
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw } from 'lucide-react';
+
+const API_BASE_URL = 'http://localhost:3000';
+
+const StudentFeedbackPortal = () => {
+  const [activeTab, setActiveTab] = useState('courses');
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  const [feedbackForm, setFeedbackForm] = useState({
+    courseId: null,
+    rating: 0,
+    comment: ''
+  });
+
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#7c3aed'];
+
+  // Fetch courses with stats from backend
+  const fetchCoursesWithStats = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${API_BASE_URL}/feedback/stats`);
+      if (!response.ok) throw new Error('Failed to fetch courses');
+      const data = await response.json();
+      setCourses(data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching courses:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch on component mount
+  useEffect(() => {
+    fetchCoursesWithStats();
+  }, []);
+
+  const handleSubmitFeedback = async () => {
+    if (feedbackForm.rating === 0) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/feedback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(feedbackForm),
+      });
+
+      if (!response.ok) throw new Error('Failed to submit feedback');
+      
+      alert('Feedback submitted successfully!');
+      setShowFeedbackForm(false);
+      setFeedbackForm({ courseId: null, rating: 0, comment: '' });
+      
+      // Refresh courses data
+      await fetchCoursesWithStats();
+    } catch (err) {
+      alert('Error submitting feedback: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const StarRating = ({ rating, size = 20, interactive = false, onRate }) => {
+    return (
+      <div className="flex gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            size={size}
+            className={`${
+              star <= rating
+                ? 'fill-yellow-400 text-yellow-400'
+                : 'text-gray-300'
+            } ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+            onClick={() => interactive && onRate && onRate(star)}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  const CourseCard = ({ course }) => (
+    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200">
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="text-xl font-bold text-gray-800">{course.name}</h3>
+          <p className="text-sm text-gray-500">{course.code}</p>
+          <p className="text-sm text-gray-600 mt-1">{course.instructor}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-3xl font-bold text-blue-600">
+            {course.avgRating ? course.avgRating.toFixed(1) : '0.0'}
+          </div>
+          <StarRating rating={Math.round(course.avgRating || 0)} size={16} />
+        </div>
+      </div>
+      
+      <div className="flex gap-2 mt-4">
+        <button
+          onClick={() => {
+            setSelectedCourse(course);
+            setActiveTab('analytics');
+          }}
+          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <TrendingUp size={16} />
+          View Analytics
+        </button>
+        <button
+          onClick={() => {
+            setFeedbackForm({ ...feedbackForm, courseId: course.id });
+            setShowFeedbackForm(true);
+          }}
+          className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+        >
+          <MessageSquare size={16} />
+          Give Feedback
+        </button>
+      </div>
+      
+      <div className="mt-4 pt-4 border-t border-gray-200">
+        <p className="text-sm text-gray-600">{course.totalFeedbacks || 0} total feedbacks</p>
+      </div>
+    </div>
+  );
+
+  const CoursesView = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-6 text-white">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Course Feedback System</h2>
+            <p className="text-blue-100">View course ratings and submit your feedback</p>
+          </div>
+          <button
+            onClick={fetchCoursesWithStats}
+            disabled={loading}
+            className="bg-white text-blue-600 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2 font-semibold"
+          >
+            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <p className="font-semibold">Error: {error}</p>
+          <p className="text-sm mt-1">Make sure the backend server is running on http://localhost:3000</p>
+        </div>
+      )}
+
+      {loading && courses.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <p className="mt-4 text-gray-600">Loading courses...</p>
+        </div>
+      ) : courses.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg shadow-md">
+          <p className="text-gray-600 text-lg">No courses available yet.</p>
+          <p className="text-gray-500 text-sm mt-2">Add courses through the backend API.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {courses.map(course => (
+            <CourseCard key={course.id} course={course} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const AnalyticsView = () => {
+    const course = selectedCourse || courses[0];
+    
+    if (!course) {
+      return (
+        <div className="text-center py-12 bg-white rounded-lg shadow-md">
+          <p className="text-gray-600">No course data available</p>
+        </div>
+      );
+    }
+    
+    const barData = (course.distribution || []).map(d => ({
+      name: `${d.rating} Star`,
+      count: d.count,
+      percentage: course.totalFeedbacks > 0 
+        ? ((d.count / course.totalFeedbacks) * 100).toFixed(1)
+        : '0.0'
+    }));
+
+    const pieData = (course.distribution || []).map(d => ({
+      name: `${d.rating} Star`,
+      value: d.count
+    }));
+
+    return (
+      <div className="space-y-6">
+        <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-800">{course.name}</h2>
+              <p className="text-gray-600">{course.code} - {course.instructor}</p>
+            </div>
+            <div className="text-right">
+              <div className="text-4xl font-bold text-blue-600">
+                {course.avgRating ? course.avgRating.toFixed(2) : '0.00'}
+              </div>
+              <StarRating rating={Math.round(course.avgRating || 0)} size={20} />
+              <p className="text-sm text-gray-600 mt-1">{course.totalFeedbacks || 0} ratings</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            {(course.distribution || []).map((dist, idx) => (
+              <div key={dist.rating} className="text-center p-4 bg-gray-50 rounded-lg">
+                <div className="text-2xl font-bold" style={{ color: COLORS[4 - idx] }}>
+                  {dist.count}
+                </div>
+                <StarRating rating={dist.rating} size={14} />
+                <div className="text-xs text-gray-600 mt-1">
+                  {course.totalFeedbacks > 0 
+                    ? ((dist.count / course.totalFeedbacks) * 100).toFixed(1)
+                    : '0.0'}%
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="text-blue-600" />
+              <h3 className="text-xl font-bold text-gray-800">Rating Distribution (Bar)</h3>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={barData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip 
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white p-3 shadow-lg rounded border border-gray-200">
+                          <p className="font-semibold">{payload[0].payload.name}</p>
+                          <p className="text-blue-600">Count: {payload[0].value}</p>
+                          <p className="text-gray-600">Percentage: {payload[0].payload.percentage}%</p>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
+                />
+                <Bar dataKey="count" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="text-green-600" />
+              <h3 className="text-xl font-bold text-gray-800">Rating Distribution (Pie)</h3>
+            </div>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <button
+          onClick={() => setActiveTab('courses')}
+          className="bg-gray-600 text-white py-2 px-6 rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          Back to Courses
+        </button>
+      </div>
+    );
+  };
+
+  const FeedbackFormModal = () => {
+    const course = courses.find(c => c.id === feedbackForm.courseId);
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <h3 className="text-2xl font-bold text-gray-800 mb-4">Submit Feedback</h3>
+          
+          {course && (
+            <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+              <p className="font-semibold text-gray-800">{course.name}</p>
+              <p className="text-sm text-gray-600">{course.code}</p>
+            </div>
+          )}
+
+          <div>
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-3">
+                Your Rating *
+              </label>
+              <div className="flex justify-center">
+                <StarRating
+                  rating={feedbackForm.rating}
+                  size={40}
+                  interactive={true}
+                  onRate={(rating) => setFeedbackForm({ ...feedbackForm, rating })}
+                />
+              </div>
+              {feedbackForm.rating > 0 && (
+                <p className="text-center mt-2 text-gray-600">
+                  You rated: {feedbackForm.rating} star{feedbackForm.rating > 1 ? 's' : ''}
+                </p>
+              )}
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Comments (Optional)
+              </label>
+              <textarea
+                value={feedbackForm.comment}
+                onChange={(e) => setFeedbackForm({ ...feedbackForm, comment: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                rows={4}
+                placeholder="Share your experience with this course..."
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleSubmitFeedback}
+                disabled={feedbackForm.rating === 0 || loading}
+                className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
+              >
+                {loading ? 'Submitting...' : 'Submit Feedback'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowFeedbackForm(false);
+                  setFeedbackForm({ courseId: null, rating: 0, comment: '' });
+                }}
+                disabled={loading}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <nav className="bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-gray-800">Student Feedback Portal</h1>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setActiveTab('courses')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  activeTab === 'courses'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Courses
+              </button>
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  activeTab === 'analytics'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Analytics
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        {activeTab === 'courses' ? <CoursesView /> : <AnalyticsView />}
+      </main>
+
+      {showFeedbackForm && <FeedbackFormModal />}
+    </div>
+  );
+};
+
+export default StudentFeedbackPortal;
