@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw } from 'lucide-react';
+import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw, Plus, Edit, Trash2, X, Save } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:3000';
 
@@ -8,6 +8,7 @@ const StudentFeedbackPortal = () => {
   const [activeTab, setActiveTab] = useState('courses');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showCourseForm, setShowCourseForm] = useState(false);
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,6 +18,15 @@ const StudentFeedbackPortal = () => {
     rating: 0,
     comment: ''
   });
+
+  const [courseForm, setCourseForm] = useState({
+    id: null,
+    name: '',
+    code: '',
+    instructor: ''
+  });
+
+  const [editMode, setEditMode] = useState(false);
 
   const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#7c3aed'];
 
@@ -42,6 +52,110 @@ const StudentFeedbackPortal = () => {
     fetchCoursesWithStats();
   }, []);
 
+  // Create new course
+  const handleCreateCourse = async () => {
+    if (!courseForm.name || !courseForm.code || !courseForm.instructor) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/courses`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: courseForm.name,
+          code: courseForm.code,
+          instructor: courseForm.instructor
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create course');
+      
+      alert('Course created successfully!');
+      setShowCourseForm(false);
+      setCourseForm({ id: null, name: '', code: '', instructor: '' });
+      await fetchCoursesWithStats();
+    } catch (err) {
+      alert('Error creating course: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Update existing course
+  const handleUpdateCourse = async () => {
+    if (!courseForm.name || !courseForm.code || !courseForm.instructor) {
+      alert('Please fill all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/courses/${courseForm.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: courseForm.name,
+          code: courseForm.code,
+          instructor: courseForm.instructor
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update course');
+      
+      alert('Course updated successfully!');
+      setShowCourseForm(false);
+      setEditMode(false);
+      setCourseForm({ id: null, name: '', code: '', instructor: '' });
+      await fetchCoursesWithStats();
+    } catch (err) {
+      alert('Error updating course: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Delete course
+  const handleDeleteCourse = async (courseId, courseName) => {
+    if (!confirm(`Are you sure you want to delete "${courseName}"?\nThis will also delete all feedback for this course.`)) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) throw new Error('Failed to delete course');
+      
+      alert('Course deleted successfully!');
+      await fetchCoursesWithStats();
+    } catch (err) {
+      alert('Error deleting course: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open edit form
+  const openEditForm = (course) => {
+    setCourseForm({
+      id: course.id,
+      name: course.name,
+      code: course.code,
+      instructor: course.instructor
+    });
+    setEditMode(true);
+    setShowCourseForm(true);
+  };
+
   const handleSubmitFeedback = async () => {
     if (feedbackForm.rating === 0) return;
     
@@ -61,7 +175,6 @@ const StudentFeedbackPortal = () => {
       setShowFeedbackForm(false);
       setFeedbackForm({ courseId: null, rating: 0, comment: '' });
       
-      // Refresh courses data
       await fetchCoursesWithStats();
     } catch (err) {
       alert('Error submitting feedback: ' + err.message);
@@ -89,7 +202,7 @@ const StudentFeedbackPortal = () => {
     );
   };
 
-  const CourseCard = ({ course }) => (
+  const CourseCard = ({ course, isAdmin = false }) => (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200">
       <div className="flex justify-between items-start mb-4">
         <div>
@@ -105,28 +218,47 @@ const StudentFeedbackPortal = () => {
         </div>
       </div>
       
-      <div className="flex gap-2 mt-4">
-        <button
-          onClick={() => {
-            setSelectedCourse(course);
-            setActiveTab('analytics');
-          }}
-          className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
-        >
-          <TrendingUp size={16} />
-          View Analytics
-        </button>
-        <button
-          onClick={() => {
-            setFeedbackForm({ ...feedbackForm, courseId: course.id });
-            setShowFeedbackForm(true);
-          }}
-          className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-        >
-          <MessageSquare size={16} />
-          Give Feedback
-        </button>
-      </div>
+      {isAdmin ? (
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => openEditForm(course)}
+            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <Edit size={16} />
+            Edit
+          </button>
+          <button
+            onClick={() => handleDeleteCourse(course.id, course.name)}
+            className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={() => {
+              setSelectedCourse(course);
+              setActiveTab('analytics');
+            }}
+            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <TrendingUp size={16} />
+            View Analytics
+          </button>
+          <button
+            onClick={() => {
+              setFeedbackForm({ ...feedbackForm, courseId: course.id });
+              setShowFeedbackForm(true);
+            }}
+            className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+          >
+            <MessageSquare size={16} />
+            Give Feedback
+          </button>
+        </div>
+      )}
       
       <div className="mt-4 pt-4 border-t border-gray-200">
         <p className="text-sm text-gray-600">{course.totalFeedbacks || 0} total feedbacks</p>
@@ -168,12 +300,60 @@ const StudentFeedbackPortal = () => {
       ) : courses.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg shadow-md">
           <p className="text-gray-600 text-lg">No courses available yet.</p>
-          <p className="text-gray-500 text-sm mt-2">Add courses through the backend API.</p>
+          <p className="text-gray-500 text-sm mt-2">Go to Admin panel to add courses.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {courses.map(course => (
             <CourseCard key={course.id} course={course} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const AdminView = () => (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg p-6 text-white">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold mb-2">Admin Panel</h2>
+            <p className="text-purple-100">Manage courses - Create, Update, Delete</p>
+          </div>
+          <button
+            onClick={() => {
+              setCourseForm({ id: null, name: '', code: '', instructor: '' });
+              setEditMode(false);
+              setShowCourseForm(true);
+            }}
+            className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 font-semibold"
+          >
+            <Plus size={18} />
+            Add Course
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+          <p className="font-semibold">Error: {error}</p>
+        </div>
+      )}
+
+      {loading && courses.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+          <p className="mt-4 text-gray-600">Loading courses...</p>
+        </div>
+      ) : courses.length === 0 ? (
+        <div className="text-center py-12 bg-white rounded-lg shadow-md">
+          <p className="text-gray-600 text-lg">No courses available.</p>
+          <p className="text-gray-500 text-sm mt-2">Click "Add Course" to create your first course.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {courses.map(course => (
+            <CourseCard key={course.id} course={course} isAdmin={true} />
           ))}
         </div>
       )}
@@ -305,6 +485,93 @@ const StudentFeedbackPortal = () => {
     );
   };
 
+  const CourseFormModal = () => {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-2xl font-bold text-gray-800">
+              {editMode ? 'Edit Course' : 'Add New Course'}
+            </h3>
+            <button
+              onClick={() => {
+                setShowCourseForm(false);
+                setEditMode(false);
+                setCourseForm({ id: null, name: '', code: '', instructor: '' });
+              }}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Course Name *
+              </label>
+              <input
+                type="text"
+                value={courseForm.name}
+                onChange={(e) => setCourseForm({ ...courseForm, name: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="e.g., Data Structures & Algorithms"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Course Code *
+              </label>
+              <input
+                type="text"
+                value={courseForm.code}
+                onChange={(e) => setCourseForm({ ...courseForm, code: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="e.g., CS301"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Instructor Name *
+              </label>
+              <input
+                type="text"
+                value={courseForm.instructor}
+                onChange={(e) => setCourseForm({ ...courseForm, instructor: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                placeholder="e.g., Dr. Sarah Johnson"
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={editMode ? handleUpdateCourse : handleCreateCourse}
+                disabled={loading}
+                className="flex-1 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2"
+              >
+                <Save size={18} />
+                {loading ? 'Saving...' : editMode ? 'Update Course' : 'Create Course'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowCourseForm(false);
+                  setEditMode(false);
+                  setCourseForm({ id: null, name: '', code: '', instructor: '' });
+                }}
+                disabled={loading}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const FeedbackFormModal = () => {
     const course = courses.find(c => c.id === feedbackForm.courseId);
     
@@ -405,16 +672,32 @@ const StudentFeedbackPortal = () => {
               >
                 Analytics
               </button>
+              <button
+                onClick={() => {
+                  setActiveTab('admin');
+                  fetchCoursesWithStats();
+                }}
+                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                  activeTab === 'admin'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                Admin
+              </button>
             </div>
           </div>
         </div>
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {activeTab === 'courses' ? <CoursesView /> : <AnalyticsView />}
+        {activeTab === 'courses' && <CoursesView />}
+        {activeTab === 'analytics' && <AnalyticsView />}
+        {activeTab === 'admin' && <AdminView />}
       </main>
 
       {showFeedbackForm && <FeedbackFormModal />}
+      {showCourseForm && <CourseFormModal />}
     </div>
   );
 };
