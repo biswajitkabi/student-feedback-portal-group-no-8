@@ -20,10 +20,6 @@ function looksLikeUrl(v?: string) {
         const dbHost = config.get<string>('DB_HOST');
         const envDbUrlFromHost = looksLikeUrl(dbHost) ? dbHost : undefined;
 
-        // choose url in this order:
-        // 1) DATABASE_URL
-        // 2) DB_HOST (if someone accidentally put full URL there)
-        // 3) fallback to components (host/port/username/...)
         const databaseUrl = envDatabaseUrl || envDbUrlFromHost;
 
         if (databaseUrl) {
@@ -40,7 +36,7 @@ function looksLikeUrl(v?: string) {
             type: 'postgres',
             url: databaseUrl,
             autoLoadEntities: true,
-            synchronize: true,            // set false in production
+            synchronize: false,            // set false in production
             logging: ['error', 'warn'],
             extra: {
               ssl: {
@@ -60,7 +56,7 @@ function looksLikeUrl(v?: string) {
           password: config.get<string>('DB_PASSWORD', ''),
           database: config.get<string>('DB_NAME', 'student_feedback_db'),
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: true, // set false in production
+          synchronize: false, // set false in production
           logging: true,
         } as TypeOrmModuleOptions;
       },
