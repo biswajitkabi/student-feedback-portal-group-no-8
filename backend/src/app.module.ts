@@ -11,37 +11,34 @@ import { FeedbackModule } from './feedback/feedback.module';
     }),
     TypeOrmModule.forRootAsync({
       useFactory: () => {
-        const isProduction = process.env.NODE_ENV === 'production';
         const databaseUrl = process.env.DATABASE_URL;
         
-        // If in production, use hardcoded Render database config
-        if (isProduction) {
-          return {
-            type: 'postgres' as const,
-            host: 'dpg-d3h78dvfte5s73cmvg3g-a.oregon-postgres.render.com', // UPDATE WITH YOUR ACTUAL REGION
-            port: 5432,
-            username: 'studentfeeback_user',
-            password: 'q72epzAxeHJhWTZNl5LRN0ydbqE37tux',
-            database: 'studentfeeback',
-            ssl: {
-              rejectUnauthorized: false,
-            },
-            entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: false,
-            logging: true,
-          };
+        if (!databaseUrl) {
+          throw new Error('DATABASE_URL environment variable is not set');
         }
+
+        // Parse the DATABASE_URL
+        const url = new URL(databaseUrl);
         
-        // Local development with individual environment variables
+        console.log('Connecting to database:', {
+          host: url.hostname,
+          port: url.port || '5432',
+          database: url.pathname.slice(1),
+          username: url.username,
+        });
+
         return {
           type: 'postgres' as const,
-          host: process.env.DB_HOST || 'localhost',
-          port: parseInt(process.env.DB_PORT || '5432'),
-          username: process.env.DB_USERNAME || 'postgres',
-          password: process.env.DB_PASSWORD || 'Biswa@711',
-          database: process.env.DB_NAME || 'student_feedback_db',
+          host: url.hostname,
+          port: parseInt(url.port) || 5432,
+          username: url.username,
+          password: decodeURIComponent(url.password),
+          database: url.pathname.slice(1),
+          ssl: {
+            rejectUnauthorized: false,
+          },
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: !isProduction,
+          synchronize: false, // Always false in production
           logging: true,
         };
       },
