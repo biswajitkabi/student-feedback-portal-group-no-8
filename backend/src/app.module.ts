@@ -1,67 +1,46 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { CoursesModule } from './courses/courses.module';
 import { FeedbackModule } from './feedback/feedback.module';
 
-function looksLikeUrl(v?: string) {
-  return typeof v === 'string' && v.startsWith('postgres');
-}
-
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService): TypeOrmModuleOptions => {
-        const envDatabaseUrl = config.get<string>('DATABASE_URL');
-        const dbHost = config.get<string>('DB_HOST');
-        const envDbUrlFromHost = looksLikeUrl(dbHost) ? dbHost : undefined;
-
-        const databaseUrl = envDatabaseUrl || envDbUrlFromHost;
-
-        if (databaseUrl) {
-          console.log('Using full DATABASE URL for DB connection (env var used):', envDatabaseUrl ? 'DATABASE_URL' : 'DB_HOST(as url)');
-          // parse host for debug logging (not for connection)
-          try {
-            const parsed = new URL(databaseUrl);
-            console.log(`DB host parsed: ${parsed.hostname}`);
-          } catch (e) {
-            console.warn('Could not parse DATABASE_URL for debug:', e.message);
-          }
-
+      useFactory: () => {
+        const isProduction = process.env.NODE_ENV === 'production';
+        
+        // If DATABASE_URL exists (Render), use it
+        if (process.env.DATABASE_URL) {
           return {
-            type: 'postgres',
-            url: databaseUrl,
-            autoLoadEntities: true,
-            synchronize: false,            // set false in production
-            logging: ['error', 'warn'],
-            extra: {
-              ssl: {
-                rejectUnauthorized: false,
-              },
+            type: 'postgres' as const,
+            url: process.env.DATABASE_URL,
+            ssl: {
+              rejectUnauthorized: false,
             },
+            entities: [__dirname + '/**/*.entity{.ts,.js}'],
+            synchronize: false, // IMPORTANT: false in production
+            logging: true,
           };
         }
-
-        // else use individual env fields (local dev)
-        console.log('Using individual DB env vars (local dev)');
+        
+        // Otherwise use individual environment variables (local development)
         return {
-          type: 'postgres',
-          host: config.get<string>('DB_HOST', 'localhost'),
-          port: parseInt(config.get<string>('DB_PORT', '5432'), 10),
-          username: config.get<string>('DB_USERNAME', 'postgres'),
-          password: config.get<string>('DB_PASSWORD', ''),
-          database: config.get<string>('DB_NAME', 'student_feedback_db'),
+          type: 'postgres' as const,
+          host: process.env.DB_HOST || 'localhost',
+          port: parseInt(process.env.DB_PORT || '5432'),
+          username: process.env.DB_USERNAME || 'postgres',
+          password: process.env.DB_PASSWORD || 'Biswa@711',
+          database: process.env.DB_NAME || 'student_feedback_db',
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: false, // set false in production
+          synchronize: !isProduction, // false in production
           logging: true,
-        } as TypeOrmModuleOptions;
+        };
       },
     }),
-
     CoursesModule,
     FeedbackModule,
   ],
