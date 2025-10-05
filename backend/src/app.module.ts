@@ -9,38 +9,23 @@ import { FeedbackModule } from './feedback/feedback.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRootAsync({
-      useFactory: () => {
-        const databaseUrl = process.env.DATABASE_URL;
-        
-        if (!databaseUrl) {
-          throw new Error('DATABASE_URL environment variable is not set');
-        }
-
-        // Parse the DATABASE_URL
-        const url = new URL(databaseUrl);
-        
-        console.log('Connecting to database:', {
-          host: url.hostname,
-          port: url.port || '5432',
-          database: url.pathname.slice(1),
-          username: url.username,
-        });
-
-        return {
-          type: 'postgres' as const,
-          host: url.hostname,
-          port: parseInt(url.port) || 5432,
-          username: url.username,
-          password: decodeURIComponent(url.password),
-          database: url.pathname.slice(1),
-          ssl: {
-            rejectUnauthorized: false,
-          },
-          entities: [__dirname + '/**/*.entity{.ts,.js}'],
-          synchronize: false, // Always false in production
-          logging: true,
-        };
+    TypeOrmModule.forRoot({
+      type: 'postgres',
+      // HARDCODED for testing - Replace with your actual values
+      host: 'dpg-d3h78dvfte5s73cmvg3g-a.oregon-postgres.render.com',
+      port: 5432,
+      username: 'studentfeeback_user',
+      password: 'q72epzAxeHJhWTZNl5LRN0ydbqE37tux',
+      database: 'studentfeeback',
+      ssl: {
+        rejectUnauthorized: false,
+      },
+      entities: [__dirname + '/**/*.entity{.ts,.js}'],
+      synchronize: false,
+      logging: true,
+      extra: {
+        max: 10,
+        connectionTimeoutMillis: 20000,
       },
     }),
     CoursesModule,
