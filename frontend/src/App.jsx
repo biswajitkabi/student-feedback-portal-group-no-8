@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+<<<<<<< HEAD
 import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw, Plus, Edit, Trash2, X, Save, LogOut, UserCheck, ShieldCheck, User } from 'lucide-react';
+=======
+import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw, Plus, Edit, Trash2, X, Save, LogOut, UserCheck } from 'lucide-react';
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
 
 const API_BASE_URL = 'http://localhost:3000';
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#7c3aed'];
@@ -25,7 +29,7 @@ const StarRating = ({ rating, size = 20, interactive = false, onRate }) => {
                     className={`${star <= rating
                         ? 'fill-yellow-400 text-yellow-400'
                         : 'text-gray-300'
-                        } ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+                    } ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
                     onClick={() => interactive && onRate && onRate(star)}
                 />
             ))}
@@ -146,25 +150,38 @@ const CoursesView = ({ courses, loading, error, fetchCoursesWithStats, ...props 
 );
 
 // View Component: AdminView
-const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setShowCourseForm, ...props }) => (
+const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setShowCourseForm, handleLogout, ...props }) => (
     <div className="space-y-6">
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg p-6 text-white">
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold mb-2">Admin Panel</h2>
+<<<<<<< HEAD
                      {/* <p className="text-purple-100">Manage courses</p> */}
+=======
+                    <p className="text-purple-100">Manage courses - Create, Update, Delete</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setCourseForm({ id: null, name: '', code: '', instructor: '' });
-                        setEditMode(false);
-                        setShowCourseForm(true);
-                    }}
-                    className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 font-semibold"
-                >
-                    <Plus size={18} />
-                    Add Course
-                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => {
+                            setCourseForm({ id: null, name: '', code: '', instructor: '' });
+                            setEditMode(false);
+                            setShowCourseForm(true);
+                        }}
+                        className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 font-semibold"
+                    >
+                        <Plus size={18} />
+                        Add Course
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 font-semibold"
+                    >
+                        <LogOut size={18} />
+                        Logout
+                    </button>
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
+                </div>
             </div>
         </div>
 
@@ -475,6 +492,63 @@ const LoginFormModal = ({ show, role, handleLogin, handleClose, loginForm, setLo
     );
 };
 
+// Modal Component: LoginFormModal
+const LoginFormModal = ({ show, handleLogin, handleClose, loginForm, setLoginForm, loading }) => {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">Admin Login</h3>
+                    <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                        <input
+                            type="email"
+                            value={loginForm.email}
+                            onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="admin@example.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <input
+                            type="password"
+                            value={loginForm.password}
+                            onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="password"
+                        />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            onClick={handleLogin}
+                            disabled={loading}
+                            className="flex-1 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                        >
+                            <UserCheck size={18} />
+                            Login
+                        </button>
+                        <button
+                            onClick={handleClose}
+                            disabled={loading}
+                            className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // View Component: LoginView (The initial screen)
 const LoginView = ({ onAdminLoginClick, onStudentLoginClick }) => {
@@ -512,15 +586,41 @@ const StudentFeedbackPortal = () => {
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [showFeedbackForm, setShowFeedbackForm] = useState(false);
     const [showCourseForm, setShowCourseForm] = useState(false);
+<<<<<<< HEAD
     const [loginMode, setLoginMode] = useState(null); // null | 'student' | 'admin'
     const [userRole, setUserRole] = useState(null); // null, 'student', 'admin'
+=======
+    const [showLoginForm, setShowLoginForm] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+<<<<<<< HEAD
     const [feedbackForm, setFeedbackForm] = useState({ courseId: null, rating: 0, comment: '' });
     const [courseForm, setCourseForm] = useState({ id: null, name: '', code: '', instructor: '' });
     const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+=======
+    const [feedbackForm, setFeedbackForm] = useState({
+        courseId: null,
+        rating: 0,
+        comment: ''
+    });
+
+    const [courseForm, setCourseForm] = useState({
+        id: null,
+        name: '',
+        code: '',
+        instructor: ''
+    });
+
+    const [loginForm, setLoginForm] = useState({
+        email: '',
+        password: ''
+    });
+
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
     const [editMode, setEditMode] = useState(false);
 
     // Fetch courses from backend
@@ -620,6 +720,10 @@ const StudentFeedbackPortal = () => {
         setShowCourseForm(true);
     };
 
+<<<<<<< HEAD
+=======
+    // Close course form and reset state
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
     const handleCloseCourseForm = () => {
         setShowCourseForm(false);
         setEditMode(false);
@@ -646,11 +750,16 @@ const StudentFeedbackPortal = () => {
         }
     };
 
+<<<<<<< HEAD
+=======
+    // Close feedback form and reset state
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
     const handleCloseFeedbackForm = () => {
         setShowFeedbackForm(false);
         setFeedbackForm({ courseId: null, rating: 0, comment: '' });
     };
 
+<<<<<<< HEAD
     // Auth handling
     const handleLogin = () => {
         if (loginMode === 'admin') {
@@ -673,6 +782,53 @@ const StudentFeedbackPortal = () => {
                 alert('Invalid student credentials. Please try again.');
             }
         }
+=======
+    const handleAdminTabClick = () => {
+        if (isAdmin) {
+            setActiveTab('admin');
+        } else {
+            setShowLoginForm(true);
+        }
+    };
+
+    const handleLogin = () => {
+        // NOTE: This is a mock login. In a real app, you would make an API call to your backend.
+        if (loginForm.email === 'admin@example.com' && loginForm.password === 'password') {
+            setIsAdmin(true);
+            setShowLoginForm(false);
+            setActiveTab('admin');
+            setLoginForm({ email: '', password: '' });
+        } else {
+            alert('Invalid credentials. Please try again.');
+        }
+    };
+
+    const handleLogout = () => {
+        setIsAdmin(false);
+        setActiveTab('courses');
+    };
+
+    const handleCloseLoginForm = () => {
+        setShowLoginForm(false);
+        setLoginForm({ email: '', password: '' });
+    };
+
+    const tabProps = {
+        courses,
+        loading,
+        error,
+        fetchCoursesWithStats,
+        setSelectedCourse,
+        setActiveTab,
+        setFeedbackForm,
+        setShowFeedbackForm,
+        setCourseForm,
+        setEditMode,
+        setShowCourseForm,
+        openEditForm,
+        handleDeleteCourse,
+        handleLogout
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
     };
 
     const handleLogout = () => {
@@ -719,6 +875,7 @@ const StudentFeedbackPortal = () => {
                 <div className="max-w-7xl mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl font-bold text-gray-800">Student Feedback Portal</h1>
+<<<<<<< HEAD
                         <div className="flex items-center gap-2">
                             <button onClick={() => setActiveTab('courses')} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'courses' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>Courses</button>
                             <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'analytics' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>Analytics</button>
@@ -727,6 +884,35 @@ const StudentFeedbackPortal = () => {
                             )}
                             <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 font-semibold">
                                 <LogOut size={16} /> Logout
+=======
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setActiveTab('courses')}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'courses'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                Courses
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('analytics')}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'analytics'
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                Analytics
+                            </button>
+                            <button
+                                onClick={handleAdminTabClick}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'admin' && isAdmin
+                                    ? 'bg-purple-600 text-white'
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                            >
+                                Admin
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
                             </button>
                         </div>
                     </div>
@@ -734,6 +920,7 @@ const StudentFeedbackPortal = () => {
             </nav>
 
             <main className="max-w-7xl mx-auto px-4 py-8">
+<<<<<<< HEAD
                 {activeTab === 'courses' && <CoursesView {...viewProps} />}
                 {activeTab === 'analytics' && <AnalyticsView selectedCourse={selectedCourse} courses={courses} setActiveTab={setActiveTab} setSelectedCourse={setSelectedCourse} />}
                 {activeTab === 'admin' && userRole === 'admin' && <AdminView {...viewProps} />}
@@ -741,6 +928,39 @@ const StudentFeedbackPortal = () => {
 
             <FeedbackFormModal show={showFeedbackForm} courses={courses} feedbackForm={feedbackForm} setFeedbackForm={setFeedbackForm} handleSubmit={handleSubmitFeedback} handleClose={handleCloseFeedbackForm} loading={loading} />
             <CourseFormModal show={showCourseForm} editMode={editMode} courseForm={courseForm} setCourseForm={setCourseForm} handleSave={handleSaveCourse} handleClose={handleCloseCourseForm} loading={loading} />
+=======
+                {activeTab === 'courses' && <CoursesView {...tabProps} />}
+                {activeTab === 'analytics' && <AnalyticsView selectedCourse={selectedCourse} courses={courses} setActiveTab={setActiveTab} />}
+                {activeTab === 'admin' && isAdmin && <AdminView {...tabProps} />}
+            </main>
+
+            <FeedbackFormModal
+                show={showFeedbackForm}
+                courses={courses}
+                feedbackForm={feedbackForm}
+                setFeedbackForm={setFeedbackForm}
+                handleSubmit={handleSubmitFeedback}
+                handleClose={handleCloseFeedbackForm}
+                loading={loading}
+            />
+            <CourseFormModal
+                show={showCourseForm}
+                editMode={editMode}
+                courseForm={courseForm}
+                setCourseForm={setCourseForm}
+                handleSave={handleSaveCourse}
+                handleClose={handleCloseCourseForm}
+                loading={loading}
+            />
+            <LoginFormModal
+                show={showLoginForm}
+                handleLogin={handleLogin}
+                handleClose={handleCloseLoginForm}
+                loginForm={loginForm}
+                setLoginForm={setLoginForm}
+                loading={loading}
+            />
+>>>>>>> 2ce607f25eb1b79d39f3b91f2d9ada1314aa04c3
         </div>
     );
 };
