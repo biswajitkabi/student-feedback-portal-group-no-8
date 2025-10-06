@@ -206,4 +206,4 @@ Password: password
 
  Pagination: Add pagination for large course/feedback datasets.
 
- Real-time Updates: Integrate WebSockets for live analytics refresh.
+ Real-time Updates: Integrate WebSockets for live analytics refresh
