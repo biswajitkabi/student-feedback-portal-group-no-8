@@ -145,7 +145,7 @@ const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setSho
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold mb-2">Admin Panel</h2>
-                    <p className="text-purple-100">Manage courses - Create, Update, Delete</p>
+                    <p className="text-purple-100">Manage courses </p>
                 </div>
                 <button
                     onClick={() => {
