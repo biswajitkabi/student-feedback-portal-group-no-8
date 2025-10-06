@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw, Plus, Edit, Trash2, X, Save } from 'lucide-react';
+import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw, Plus, Edit, Trash2, X, Save, LogOut, UserCheck } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:3000';
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#7c3aed'];
@@ -17,7 +17,7 @@ const StarRating = ({ rating, size = 20, interactive = false, onRate }) => {
                     className={`${star <= rating
                         ? 'fill-yellow-400 text-yellow-400'
                         : 'text-gray-300'
-                        } ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
+                    } ${interactive ? 'cursor-pointer hover:scale-110 transition-transform' : ''}`}
                     onClick={() => interactive && onRate && onRate(star)}
                 />
             ))}
@@ -139,25 +139,34 @@ const CoursesView = ({ courses, loading, error, fetchCoursesWithStats, ...props 
 );
 
 // View Component: AdminView
-const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setShowCourseForm, ...props }) => (
+const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setShowCourseForm, handleLogout, ...props }) => (
     <div className="space-y-6">
         <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg p-6 text-white">
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold mb-2">Admin Panel</h2>
-                    <p className="text-purple-100">Manage courses </p>
+                    <p className="text-purple-100">Manage courses - Create, Update, Delete</p>
                 </div>
-                <button
-                    onClick={() => {
-                        setCourseForm({ id: null, name: '', code: '', instructor: '' });
-                        setEditMode(false);
-                        setShowCourseForm(true);
-                    }}
-                    className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 font-semibold"
-                >
-                    <Plus size={18} />
-                    Add Course
-                </button>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => {
+                            setCourseForm({ id: null, name: '', code: '', instructor: '' });
+                            setEditMode(false);
+                            setShowCourseForm(true);
+                        }}
+                        className="bg-white text-purple-600 px-4 py-2 rounded-lg hover:bg-purple-50 transition-colors flex items-center gap-2 font-semibold"
+                    >
+                        <Plus size={18} />
+                        Add Course
+                    </button>
+                    <button
+                        onClick={handleLogout}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 font-semibold"
+                    >
+                        <LogOut size={18} />
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -465,6 +474,63 @@ const FeedbackFormModal = ({ show, courses, feedbackForm, setFeedbackForm, handl
     );
 };
 
+// Modal Component: LoginFormModal
+const LoginFormModal = ({ show, handleLogin, handleClose, loginForm, setLoginForm, loading }) => {
+    if (!show) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">Admin Login</h3>
+                    <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
+                        <X size={24} />
+                    </button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                        <input
+                            type="email"
+                            value={loginForm.email}
+                            onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="admin@example.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <input
+                            type="password"
+                            value={loginForm.password}
+                            onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="password"
+                        />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                        <button
+                            onClick={handleLogin}
+                            disabled={loading}
+                            className="flex-1 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center gap-2"
+                        >
+                            <UserCheck size={18} />
+                            Login
+                        </button>
+                        <button
+                            onClick={handleClose}
+                            disabled={loading}
+                            className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 // Main App Component
 const StudentFeedbackPortal = () => {
@@ -472,6 +538,8 @@ const StudentFeedbackPortal = () => {
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [showFeedbackForm, setShowFeedbackForm] = useState(false);
     const [showCourseForm, setShowCourseForm] = useState(false);
+    const [showLoginForm, setShowLoginForm] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -487,6 +555,11 @@ const StudentFeedbackPortal = () => {
         name: '',
         code: '',
         instructor: ''
+    });
+
+    const [loginForm, setLoginForm] = useState({
+        email: '',
+        password: ''
     });
 
     const [editMode, setEditMode] = useState(false);
@@ -618,7 +691,7 @@ const StudentFeedbackPortal = () => {
         setEditMode(true);
         setShowCourseForm(true);
     };
-    
+
     // Close course form and reset state
     const handleCloseCourseForm = () => {
         setShowCourseForm(false);
@@ -649,11 +722,41 @@ const StudentFeedbackPortal = () => {
             setLoading(false);
         }
     };
-    
+
     // Close feedback form and reset state
     const handleCloseFeedbackForm = () => {
         setShowFeedbackForm(false);
         setFeedbackForm({ courseId: null, rating: 0, comment: '' });
+    };
+
+    const handleAdminTabClick = () => {
+        if (isAdmin) {
+            setActiveTab('admin');
+        } else {
+            setShowLoginForm(true);
+        }
+    };
+
+    const handleLogin = () => {
+        // NOTE: This is a mock login. In a real app, you would make an API call to your backend.
+        if (loginForm.email === 'admin@example.com' && loginForm.password === 'password') {
+            setIsAdmin(true);
+            setShowLoginForm(false);
+            setActiveTab('admin');
+            setLoginForm({ email: '', password: '' });
+        } else {
+            alert('Invalid credentials. Please try again.');
+        }
+    };
+
+    const handleLogout = () => {
+        setIsAdmin(false);
+        setActiveTab('courses');
+    };
+
+    const handleCloseLoginForm = () => {
+        setShowLoginForm(false);
+        setLoginForm({ email: '', password: '' });
     };
 
     const tabProps = {
@@ -669,7 +772,8 @@ const StudentFeedbackPortal = () => {
         setEditMode,
         setShowCourseForm,
         openEditForm,
-        handleDeleteCourse
+        handleDeleteCourse,
+        handleLogout
     };
 
     return (
@@ -684,7 +788,7 @@ const StudentFeedbackPortal = () => {
                                 className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'courses'
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
+                                }`}
                             >
                                 Courses
                             </button>
@@ -693,16 +797,16 @@ const StudentFeedbackPortal = () => {
                                 className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'analytics'
                                     ? 'bg-blue-600 text-white'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
+                                }`}
                             >
                                 Analytics
                             </button>
                             <button
-                                onClick={() => setActiveTab('admin')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'admin'
+                                onClick={handleAdminTabClick}
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'admin' && isAdmin
                                     ? 'bg-purple-600 text-white'
                                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
+                                }`}
                             >
                                 Admin
                             </button>
@@ -714,7 +818,7 @@ const StudentFeedbackPortal = () => {
             <main className="max-w-7xl mx-auto px-4 py-8">
                 {activeTab === 'courses' && <CoursesView {...tabProps} />}
                 {activeTab === 'analytics' && <AnalyticsView selectedCourse={selectedCourse} courses={courses} setActiveTab={setActiveTab} />}
-                {activeTab === 'admin' && <AdminView {...tabProps} />}
+                {activeTab === 'admin' && isAdmin && <AdminView {...tabProps} />}
             </main>
 
             <FeedbackFormModal
@@ -735,8 +839,17 @@ const StudentFeedbackPortal = () => {
                 handleClose={handleCloseCourseForm}
                 loading={loading}
             />
+            <LoginFormModal
+                show={showLoginForm}
+                handleLogin={handleLogin}
+                handleClose={handleCloseLoginForm}
+                loginForm={loginForm}
+                setLoginForm={setLoginForm}
+                loading={loading}
+            />
         </div>
     );
 };
 
 export default StudentFeedbackPortal;
+
