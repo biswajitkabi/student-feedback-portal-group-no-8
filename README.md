@@ -1,21 +1,25 @@
-🎓 Student Feedback Portal - Group no - 8
+# 🎓 Student Feedback Portal 
 
-A full-stack feedback management system where students can rate courses and view analytics.
-Includes an Admin Panel for course management and a visual analytics dashboard.
+A **full-stack feedback management system** where students can rate courses and view analytics.  
+Includes an **Admin Panel** for course management and a visual analytics dashboard.  
 
-🌐 Live Demo: Student Feedback Portal
+**🌐 Live Demo:** [Student Feedback Portal](https://student-feedback-portal-group-no-8.vercel.app)
 
-🧩 Overview
+---
 
-This project is organized as a monorepo with two major parts:
+## 🧩 Overview
 
-backend/ — NestJS + PostgreSQL API server
-
-frontend/ — React + Tailwind + Recharts web client
+This project is organized as a **monorepo** with two major parts:
+- `backend/` — **NestJS + PostgreSQL** API server  
+- `frontend/` — **React + Tailwind + Recharts** web client  
 
 Both are independent but integrated via REST APIs.
 
-🏗️ Folder Structure
+---
+
+## 🏗️ Folder Structure
+
+```
 STUDENT-FEEDBACK-PORTAL/
 │
 ├── backend/                # NestJS backend (API + PostgreSQL)
@@ -34,144 +38,161 @@ STUDENT-FEEDBACK-PORTAL/
 │   ├── tailwind.config.js  # Styling setup
 │   └── package.json
 │
-└── README.md               # Project overview (this file)
+└── README.md               # Project overview 
+```
 
-⚙️ Tech Stack
-Layer	Technology
-Frontend	React, TailwindCSS, Recharts, Vite
-Backend	NestJS, TypeORM
-Database	PostgreSQL
-Deployment	Render (Backend + DB), Vercel (Frontend)
-Language	TypeScript
-🧱 Database Schema
-courses
-Column	Type	Description
-id	SERIAL PRIMARY KEY	Unique course ID
-name	VARCHAR	Course name
-code	VARCHAR	Course code
-instructor	VARCHAR	Instructor name
-feedback
-Column	Type	Description
-id	SERIAL PRIMARY KEY	Unique feedback ID
-course_id	INT	Foreign key to courses(id)
-rating	INT (1–5)	Rating score
-comment	TEXT	Optional student comment
+---
 
-Relationship:
-One course → Many feedback entries (ON DELETE CASCADE)
+## ⚙️ Tech Stack
 
-🖥️ Backend Setup
+| Layer | Technology |
+|-------|-------------|
+| **Frontend** | React, TailwindCSS, Recharts, Vite |
+| **Backend** | NestJS, TypeORM |
+| **Database** | PostgreSQL |
+| **Deployment** | Render (Backend + DB), Vercel (Frontend) |
+| **Language** | TypeScript |
+
+---
+
+
+
+**Relationship:**  
+One course → Many feedback entries (`ON DELETE CASCADE`)
+
+---
+
+## 🖥️ Backend Setup
+
+```bash
 cd backend
 npm install
+```
 
+Create `.env` file:
 
-Create .env file:
-
+```env
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=yourpassword
 POSTGRES_DB=student_feedback_db
-
+```
 
 Run development server:
-
+```bash
 npm run start:dev
+```
 
+API runs on **http://localhost:3000**
 
-API runs on http://localhost:3000
+---
 
-🌐 Frontend Setup
+## 🌐 Frontend Setup
+
+```bash
 cd frontend
 npm install
+```
 
-
-Create .env file:
-
+Create `.env` file:
+```env
 VITE_API_BASE_URL=http://localhost:3000
-
+```
 
 Run the app:
-
+```bash
 npm run dev
+```
+
+Frontend runs on **http://localhost:5173**
+
+---
+
+## 🔄 Workflow
+
+### 👩‍🎓 Student
+1. Browse available courses  
+2. Submit star rating & comment  
+3. Instantly view analytics (bar/pie charts)
+
+### 👨‍🏫 Admin
+1. Login (`admin / admin123`)  
+2. Manage courses (Add/Edit/Delete)  
+3. View aggregated analytics  
+
+**Data Flow**
+```
+Frontend → API Request → Backend Service → PostgreSQL
+                      ↓
+              Aggregation Calculation
+                      ↓
+Frontend ← JSON Response ← Backend Controller
+```
+
+---
+
+## ⚙️ Key Features
+
+- CRUD operations for courses  
+- Feedback submission endpoint  
+- Aggregated analytics (average & distribution)  
+- Protected Admin Panel  
+- Responsive UI with interactive charts  
+- Real-time updates after feedback submission  
+- Input validation and error handling  
+
+---
+
+## ☁️ Deployment
+
+- **Backend:** Render (with PostgreSQL)  
+- **Frontend:** Vercel  
+- **Environment variables:** Configured for production  
+- **CORS:** Whitelisted Vercel domain  
+
+---
+
+## 🧠 Challenges & Solutions
+
+| Challenge | Cause | Solution |
+|------------|--------|-----------|
+| Input losing focus | State re-renders | Used `useCallback` + functional `setState` |
+| CORS errors in production | Cross-origin requests | Added Vercel domain to CORS whitelist |
+| Stats not updating immediately | Cached API response | Triggered data refetch post submission |
+
+---
+
+## 🔐 Production-Ready Aspects
+
+✅ Admin authentication (local demo)  
+✅ SQL injection prevention (TypeORM)  
+✅ Input validation (class-validator)  
+✅ Responsive design (Tailwind grid)  
+✅ Database indexes for performance  
+✅ Modular NestJS architecture  
+
+---
+
+## 🔮 Future Enhancements
+
+- JWT-based authentication  
+- Email alerts for feedback  
+- Export analytics as PDF  
+- Multi-role user management  
+- Pagination for large data  
+- Real-time WebSocket updates  
+
+---
+
+## 👥 Contributors
+
+| Name |
+|------|------|
+| **Biswajit Kabi** | 
+| **Priya Jha** | 
+| **Aditya Shrivastava** |
+| **Vivek Saini** | 
 
 
-Frontend runs on http://localhost:5173
 
-🔄 Workflow
-👩‍🎓 Student
-
-Browse available courses
-
-Submit star rating & comment
-
-Instantly view analytics (bar/pie charts)
-
-👨‍🏫 Admin
-
-Login (admin / admin123)
-
-Manage courses (Add/Edit/Delete)
-
-View aggregated analytics
-
-⚙️ Key Features
-
-CRUD operations for courses
-
-Feedback submission endpoint
-
-Aggregated analytics (average & distribution)
-
-Protected Admin Panel
-
-Responsive UI with interactive charts
-
-Real-time updates after feedback submission
-
-Input validation and error handling
-
-☁️ Deployment
-
-Backend: Render (with PostgreSQL)
-
-Frontend: Vercel
-
-Environment variables: Configured for production
-
-CORS: Whitelisted Vercel domain
-
-🧠 Challenges & Solutions
-Challenge	Cause	Solution
-Input losing focus	State re-renders	Used useCallback + functional setState
-CORS errors in production	Cross-origin requests	Added Vercel domain to CORS whitelist
-Stats not updating immediately	Cached API response	Triggered data refetch post submission
-🔐 Production-Ready Aspects
-
-✅ Admin authentication (local demo)
-✅ SQL injection prevention (TypeORM)
-✅ Input validation (class-validator)
-✅ Responsive design (Tailwind grid)
-✅ Database indexes for performance
-✅ Modular NestJS architecture
-
-🔮 Future Enhancements
-
-JWT-based authentication
-
-Email alerts for feedback
-
-Export analytics as PDF
-
-Multi-role user management
-
-Pagination for large data
-
-Real-time WebSocket updates
-
-👥 Contributors
-Name	Role
-Biswajit Kabi	
-Priya Jha	
-Aditya Shrivastava	
-Vivek Saini	
