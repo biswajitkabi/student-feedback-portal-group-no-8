@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw, Plus, Edit, Trash2, X, Save } from 'lucide-react';
+import { Star, TrendingUp, MessageSquare, BarChart3, RefreshCw, Plus, Edit, Trash2, X, Save, LogOut, UserCheck, ShieldCheck, User } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:3000';
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#7c3aed'];
 
+// --- User Data ---
+const studentUsers = [
+    { email: 'biswajit@gmail.com', password: 'biswajit@123' },
+    { email: 'priya@gmail.com', password: 'priya@123' },
+    { email: 'aditya@gmail.com', password: 'aditya@123' },
+];
+const adminUser = { email: 'admin@gmail.com', password: 'admin@123' };
+
+
 // Helper Component: StarRating
-// Moved outside the main component to prevent re-creation on render.
 const StarRating = ({ rating, size = 20, interactive = false, onRate }) => {
     return (
         <div className="flex gap-1">
@@ -26,8 +34,7 @@ const StarRating = ({ rating, size = 20, interactive = false, onRate }) => {
 };
 
 // Helper Component: CourseCard
-// Moved outside and receives all necessary functions and state via props.
-const CourseCard = ({ course, isAdmin = false, openEditForm, handleDeleteCourse, setSelectedCourse, setActiveTab, setFeedbackForm, setShowFeedbackForm }) => (
+const CourseCard = ({ course, userRole, openEditForm, handleDeleteCourse, setSelectedCourse, setActiveTab, setFeedbackForm, setShowFeedbackForm }) => (
     <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-200">
         <div className="flex justify-between items-start mb-4">
             <div>
@@ -43,7 +50,7 @@ const CourseCard = ({ course, isAdmin = false, openEditForm, handleDeleteCourse,
             </div>
         </div>
 
-        {isAdmin ? (
+        {userRole === 'admin' ? (
             <div className="flex gap-2 mt-4">
                 <button
                     onClick={() => openEditForm(course)}
@@ -126,7 +133,7 @@ const CoursesView = ({ courses, loading, error, fetchCoursesWithStats, ...props 
         ) : courses.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-lg shadow-md">
                 <p className="text-gray-600 text-lg">No courses available yet.</p>
-                <p className="text-gray-500 text-sm mt-2">Go to Admin panel to add courses.</p>
+                {props.userRole === 'admin' && <p className="text-gray-500 text-sm mt-2">Go to Admin panel to add courses.</p>}
             </div>
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -145,7 +152,7 @@ const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setSho
             <div className="flex justify-between items-center">
                 <div>
                     <h2 className="text-2xl font-bold mb-2">Admin Panel</h2>
-                    <p className="text-purple-100">Manage courses </p>
+                     {/* <p className="text-purple-100">Manage courses</p> */}
                 </div>
                 <button
                     onClick={() => {
@@ -180,7 +187,7 @@ const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setSho
         ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {courses.map(course => (
-                    <CourseCard key={course.id} course={course} isAdmin={true} {...props} />
+                    <CourseCard key={course.id} course={course} userRole="admin" {...props} />
                 ))}
             </div>
         )}
@@ -188,16 +195,40 @@ const AdminView = ({ courses, loading, error, setCourseForm, setEditMode, setSho
 );
 
 // View Component: AnalyticsView
-const AnalyticsView = ({ selectedCourse, courses, setActiveTab }) => {
-    const course = selectedCourse || courses[0];
+const AnalyticsView = ({ selectedCourse, courses, setActiveTab, setSelectedCourse }) => {
+    // If no course is selected, and there are courses available, default to the first one.
+    useEffect(() => {
+        if (!selectedCourse && courses.length > 0) {
+            setSelectedCourse(courses[0]);
+        }
+    }, [selectedCourse, courses, setSelectedCourse]);
 
-    if (!course) {
+    const handleCourseSelect = (e) => {
+        const courseId = e.target.value;
+        const course = courses.find(c => c.id.toString() === courseId);
+        if (course) {
+            setSelectedCourse(course);
+        }
+    };
+    
+    if (courses.length === 0) {
         return (
             <div className="text-center py-12 bg-white rounded-lg shadow-md">
-                <p className="text-gray-600">No course data available</p>
+                <p className="text-gray-600">No courses available to analyze.</p>
             </div>
         );
     }
+
+    if (!selectedCourse) {
+         return (
+            <div className="text-center py-12">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-gray-600">Loading analytics...</p>
+            </div>
+        );
+    }
+
+    const course = selectedCourse;
 
     const barData = (course.distribution || []).map(d => ({
         name: `${d.rating} Star`,
@@ -215,12 +246,21 @@ const AnalyticsView = ({ selectedCourse, courses, setActiveTab }) => {
     return (
         <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-800">{course.name}</h2>
-                        <p className="text-gray-600">{course.code} - {course.instructor}</p>
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+                     <div className="w-full md:w-auto">
+                        <label htmlFor="course-select" className="block text-sm font-medium text-gray-700 mb-2">Select a Course to Analyze</label>
+                        <select
+                            id="course-select"
+                            onChange={handleCourseSelect}
+                            value={selectedCourse?.id || ''}
+                            className="w-full md:w-96 p-3 border border-gray-300 rounded-lg bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            {courses.map(c => (
+                                <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+                            ))}
+                        </select>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                         <div className="text-4xl font-bold text-blue-600">
                             {course.avgRating ? course.avgRating.toFixed(2) : '0.00'}
                         </div>
@@ -316,7 +356,6 @@ const AnalyticsView = ({ selectedCourse, courses, setActiveTab }) => {
 // Modal Component: CourseFormModal
 const CourseFormModal = ({ show, editMode, courseForm, setCourseForm, handleSave, handleClose, loading }) => {
     if (!show) return null;
-
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
@@ -328,61 +367,25 @@ const CourseFormModal = ({ show, editMode, courseForm, setCourseForm, handleSave
                         <X size={24} />
                     </button>
                 </div>
-
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Course Name *
-                        </label>
-                        <input
-                            type="text"
-                            value={courseForm.name}
-                            onChange={(e) => setCourseForm(prev => ({ ...prev, name: e.target.value }))}
-                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="e.g., Data Structures & Algorithms"
-                        />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Course Name *</label>
+                        <input type="text" value={courseForm.name} onChange={(e) => setCourseForm(prev => ({ ...prev, name: e.target.value }))} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., Data Structures & Algorithms" />
                     </div>
-
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Course Code *
-                        </label>
-                        <input
-                            type="text"
-                            value={courseForm.code}
-                            onChange={(e) => setCourseForm(prev => ({ ...prev, code: e.target.value }))}
-                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="e.g., CS301"
-                        />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Course Code *</label>
+                        <input type="text" value={courseForm.code} onChange={(e) => setCourseForm(prev => ({ ...prev, code: e.target.value }))} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., CS301" />
                     </div>
-
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Instructor Name *
-                        </label>
-                        <input
-                            type="text"
-                            value={courseForm.instructor}
-                            onChange={(e) => setCourseForm(prev => ({ ...prev, instructor: e.target.value }))}
-                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            placeholder="e.g., Dr. Sarah Johnson"
-                        />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Instructor Name *</label>
+                        <input type="text" value={courseForm.instructor} onChange={(e) => setCourseForm(prev => ({ ...prev, instructor: e.target.value }))} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="e.g., Dr. Sarah Johnson" />
                     </div>
-
                     <div className="flex gap-3 pt-4">
-                        <button
-                            onClick={handleSave}
-                            disabled={loading}
-                            className="flex-1 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2"
-                        >
+                        <button onClick={handleSave} disabled={loading} className="flex-1 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold flex items-center justify-center gap-2">
                             <Save size={18} />
                             {loading ? 'Saving...' : editMode ? 'Update Course' : 'Create Course'}
                         </button>
-                        <button
-                            onClick={handleClose}
-                            disabled={loading}
-                            className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50"
-                        >
+                        <button onClick={handleClose} disabled={loading} className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50">
                             Cancel
                         </button>
                     </div>
@@ -395,67 +398,74 @@ const CourseFormModal = ({ show, editMode, courseForm, setCourseForm, handleSave
 // Modal Component: FeedbackFormModal
 const FeedbackFormModal = ({ show, courses, feedbackForm, setFeedbackForm, handleSubmit, handleClose, loading }) => {
     if (!show) return null;
-
     const course = courses.find(c => c.id === feedbackForm.courseId);
-
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                 <h3 className="text-2xl font-bold text-gray-800 mb-4">Submit Feedback</h3>
-
                 {course && (
                     <div className="mb-6 p-4 bg-blue-50 rounded-lg">
                         <p className="font-semibold text-gray-800">{course.name}</p>
                         <p className="text-sm text-gray-600">{course.code}</p>
                     </div>
                 )}
-
                 <div>
                     <div className="mb-6">
-                        <label className="block text-sm font-semibold text-gray-700 mb-3">
-                            Your Rating *
-                        </label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-3">Your Rating *</label>
                         <div className="flex justify-center">
-                            <StarRating
-                                rating={feedbackForm.rating}
-                                size={40}
-                                interactive={true}
-                                onRate={(rating) => setFeedbackForm(prev => ({ ...prev, rating }))}
-                            />
+                            <StarRating rating={feedbackForm.rating} size={40} interactive={true} onRate={(rating) => setFeedbackForm(prev => ({ ...prev, rating }))} />
                         </div>
                         {feedbackForm.rating > 0 && (
-                            <p className="text-center mt-2 text-gray-600">
-                                You rated: {feedbackForm.rating} star{feedbackForm.rating > 1 ? 's' : ''}
-                            </p>
+                            <p className="text-center mt-2 text-gray-600">You rated: {feedbackForm.rating} star{feedbackForm.rating > 1 ? 's' : ''}</p>
                         )}
                     </div>
-
                     <div className="mb-6">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Comments (Optional)
-                        </label>
-                        <textarea
-                            value={feedbackForm.comment}
-                            onChange={(e) => setFeedbackForm(prev => ({ ...prev, comment: e.target.value }))}
-                            className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            rows={4}
-                            placeholder="Share your experience with this course..."
-                        />
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Comments (Optional)</label>
+                        <textarea value={feedbackForm.comment} onChange={(e) => setFeedbackForm(prev => ({ ...prev, comment: e.target.value }))} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows={4} placeholder="Share your experience with this course..." />
                     </div>
-
                     <div className="flex gap-3">
-                        <button
-                            onClick={handleSubmit}
-                            disabled={feedbackForm.rating === 0 || loading}
-                            className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold"
-                        >
+                        <button onClick={handleSubmit} disabled={feedbackForm.rating === 0 || loading} className="flex-1 bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed font-semibold">
                             {loading ? 'Submitting...' : 'Submit Feedback'}
                         </button>
-                        <button
-                            onClick={handleClose}
-                            disabled={loading}
-                            className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50"
-                        >
+                        <button onClick={handleClose} disabled={loading} className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Modal Component: LoginFormModal
+const LoginFormModal = ({ show, role, handleLogin, handleClose, loginForm, setLoginForm, loading }) => {
+    if (!show) return null;
+
+    const title = role === 'admin' ? 'Admin Login' : 'Student Login';
+    const emailPlaceholder = role === 'admin' ? 'admin@gmail.com' : 'student@example.com';
+    const icon = role === 'admin' ? <ShieldCheck size={18} /> : <UserCheck size={18} />;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-800">{title}</h3>
+                    <button onClick={handleClose} className="text-gray-500 hover:text-gray-700"><X size={24} /></button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                        <input type="email" value={loginForm.email} onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder={emailPlaceholder} />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Password</label>
+                        <input type="password" value={loginForm.password} onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))} className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="••••••••" />
+                    </div>
+                    <div className="flex gap-3 pt-4">
+                        <button onClick={handleLogin} disabled={loading} className="flex-1 bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold flex items-center justify-center gap-2">
+                            {icon} Login
+                        </button>
+                        <button onClick={handleClose} disabled={loading} className="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-semibold">
                             Cancel
                         </button>
                     </div>
@@ -466,32 +476,54 @@ const FeedbackFormModal = ({ show, courses, feedbackForm, setFeedbackForm, handl
 };
 
 
+// View Component: LoginView (The initial screen)
+const LoginView = ({ onAdminLoginClick, onStudentLoginClick }) => {
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-700 flex flex-col items-center justify-center p-4">
+            <div className="text-center mb-12">
+                <h1 className="text-4xl md:text-5xl font-bold text-white">Welcome to the Student Feedback Portal</h1>
+                <p className="text-lg text-slate-300 mt-4">Please login to continue</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md rounded-lg shadow-xl p-8 max-w-md w-full border border-slate-700">
+                <div className="space-y-6">
+                    <button
+                        onClick={onStudentLoginClick}
+                        className="w-full bg-blue-600 text-white py-4 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg flex items-center justify-center gap-3"
+                    >
+                        <User size={22} />
+                        Login as Student
+                    </button>
+                    <button
+                        onClick={onAdminLoginClick}
+                        className="w-full bg-purple-600 text-white py-4 px-4 rounded-lg hover:bg-purple-700 transition-colors font-semibold text-lg flex items-center justify-center gap-3"
+                    >
+                        <ShieldCheck size={22} />
+                        Login as Admin
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // Main App Component
 const StudentFeedbackPortal = () => {
     const [activeTab, setActiveTab] = useState('courses');
     const [selectedCourse, setSelectedCourse] = useState(null);
     const [showFeedbackForm, setShowFeedbackForm] = useState(false);
     const [showCourseForm, setShowCourseForm] = useState(false);
+    const [loginMode, setLoginMode] = useState(null); // null | 'student' | 'admin'
+    const [userRole, setUserRole] = useState(null); // null, 'student', 'admin'
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const [feedbackForm, setFeedbackForm] = useState({
-        courseId: null,
-        rating: 0,
-        comment: ''
-    });
-
-    const [courseForm, setCourseForm] = useState({
-        id: null,
-        name: '',
-        code: '',
-        instructor: ''
-    });
-
+    const [feedbackForm, setFeedbackForm] = useState({ courseId: null, rating: 0, comment: '' });
+    const [courseForm, setCourseForm] = useState({ id: null, name: '', code: '', instructor: '' });
+    const [loginForm, setLoginForm] = useState({ email: '', password: '' });
     const [editMode, setEditMode] = useState(false);
 
-    // Fetch courses with stats from backend
+    // Fetch courses from backend
     const fetchCoursesWithStats = async () => {
         setLoading(true);
         setError(null);
@@ -508,128 +540,94 @@ const StudentFeedbackPortal = () => {
         }
     };
 
-    // Fetch on component mount
+    // Fetch on component mount if a user is logged in
     useEffect(() => {
-        fetchCoursesWithStats();
-    }, []);
-
-    // Create or Update course
-    const handleSaveCourse = async () => {
-        if (editMode) {
-            await handleUpdateCourse();
-        } else {
-            await handleCreateCourse();
+        if (userRole) {
+            fetchCoursesWithStats();
         }
-    }
+    }, [userRole]);
 
-    // Create new course
+    // Course CRUD operations
+    const handleSaveCourse = () => editMode ? handleUpdateCourse() : handleCreateCourse();
+
     const handleCreateCourse = async () => {
         if (!courseForm.name || !courseForm.code || !courseForm.instructor) {
             alert('Please fill all fields');
             return;
         }
-
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/courses`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: courseForm.name,
-                    code: courseForm.code,
-                    instructor: courseForm.instructor
-                }),
+                body: JSON.stringify({ name: courseForm.name, code: courseForm.code, instructor: courseForm.instructor }),
             });
-
             if (!response.ok) throw new Error('Failed to create course');
-
             alert('Course created successfully!');
             handleCloseCourseForm();
             await fetchCoursesWithStats();
         } catch (err) {
-            alert('Error creating course: ' + err.message);
+            alert(`Error creating course: ${err.message}\n\nPlease check if your backend server is running at ${API_BASE_URL} and that the endpoint is available. Also, check the server logs for more details.`);
         } finally {
             setLoading(false);
         }
     };
 
-    // Update existing course
     const handleUpdateCourse = async () => {
         if (!courseForm.name || !courseForm.code || !courseForm.instructor) {
             alert('Please fill all fields');
             return;
         }
-
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/courses/${courseForm.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: courseForm.name,
-                    code: courseForm.code,
-                    instructor: courseForm.instructor
-                }),
+                body: JSON.stringify({ name: courseForm.name, code: courseForm.code, instructor: courseForm.instructor }),
             });
-
             if (!response.ok) throw new Error('Failed to update course');
-
             alert('Course updated successfully!');
             handleCloseCourseForm();
             await fetchCoursesWithStats();
         } catch (err) {
-            alert('Error updating course: ' + err.message);
+            alert(`Error updating course: ${err.message}\n\nPlease check your backend server and its logs.`);
         } finally {
             setLoading(false);
         }
     };
 
-    // Delete course
     const handleDeleteCourse = async (courseId, courseName) => {
         if (!confirm(`Are you sure you want to delete "${courseName}"?\nThis will also delete all feedback for this course.`)) {
             return;
         }
-
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/courses/${courseId}`, {
-                method: 'DELETE',
-            });
-
+            const response = await fetch(`${API_BASE_URL}/courses/${courseId}`, { method: 'DELETE' });
             if (!response.ok) throw new Error('Failed to delete course');
-
             alert('Course deleted successfully!');
             await fetchCoursesWithStats();
         } catch (err) {
-            alert('Error deleting course: ' + err.message);
+            alert(`Error deleting course: ${err.message}\n\nPlease check your backend server and its logs.`);
         } finally {
             setLoading(false);
         }
     };
 
-    // Open edit form
+    // Form handling
     const openEditForm = (course) => {
-        setCourseForm({
-            id: course.id,
-            name: course.name,
-            code: course.code,
-            instructor: course.instructor
-        });
+        setCourseForm({ id: course.id, name: course.name, code: course.code, instructor: course.instructor });
         setEditMode(true);
         setShowCourseForm(true);
     };
-    
-    // Close course form and reset state
+
     const handleCloseCourseForm = () => {
         setShowCourseForm(false);
         setEditMode(false);
         setCourseForm({ id: null, name: '', code: '', instructor: '' });
     };
 
-    // Submit feedback
     const handleSubmitFeedback = async () => {
         if (feedbackForm.rating === 0) return;
-
         setLoading(true);
         try {
             const response = await fetch(`${API_BASE_URL}/feedback`, {
@@ -637,74 +635,98 @@ const StudentFeedbackPortal = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(feedbackForm),
             });
-
             if (!response.ok) throw new Error('Failed to submit feedback');
-
             alert('Feedback submitted successfully!');
             handleCloseFeedbackForm();
             await fetchCoursesWithStats();
         } catch (err) {
-            alert('Error submitting feedback: ' + err.message);
+            alert(`Error submitting feedback: ${err.message}\n\nPlease check your backend server and its logs.`);
         } finally {
             setLoading(false);
         }
     };
-    
-    // Close feedback form and reset state
+
     const handleCloseFeedbackForm = () => {
         setShowFeedbackForm(false);
         setFeedbackForm({ courseId: null, rating: 0, comment: '' });
     };
 
-    const tabProps = {
-        courses,
-        loading,
-        error,
-        fetchCoursesWithStats,
-        setSelectedCourse,
-        setActiveTab,
-        setFeedbackForm,
-        setShowFeedbackForm,
-        setCourseForm,
-        setEditMode,
-        setShowCourseForm,
-        openEditForm,
-        handleDeleteCourse
+    // Auth handling
+    const handleLogin = () => {
+        if (loginMode === 'admin') {
+            if (loginForm.email === adminUser.email && loginForm.password === adminUser.password) {
+                setUserRole('admin');
+                setActiveTab('courses');
+                handleCloseLoginForm();
+            } else {
+                alert('Invalid admin credentials. Please try again.');
+            }
+        } else if (loginMode === 'student') {
+            const user = studentUsers.find(
+                (u) => u.email === loginForm.email && u.password === loginForm.password
+            );
+            if (user) {
+                setUserRole('student');
+                setActiveTab('courses');
+                handleCloseLoginForm();
+            } else {
+                alert('Invalid student credentials. Please try again.');
+            }
+        }
     };
 
+    const handleLogout = () => {
+        setUserRole(null);
+        setActiveTab('courses');
+    };
+
+    const handleCloseLoginForm = () => {
+        setLoginMode(null);
+        setLoginForm({ email: '', password: '' });
+    };
+
+    // Props for child components
+    const viewProps = {
+        courses, loading, error, fetchCoursesWithStats, userRole,
+        setSelectedCourse, setActiveTab, setFeedbackForm, setShowFeedbackForm,
+        setCourseForm, setEditMode, setShowCourseForm, openEditForm, handleDeleteCourse,
+    };
+
+    // Render login screen or main portal
+    if (!userRole) {
+        return (
+            <>
+                <LoginView
+                    onAdminLoginClick={() => setLoginMode('admin')}
+                    onStudentLoginClick={() => setLoginMode('student')}
+                />
+                <LoginFormModal
+                    show={!!loginMode}
+                    role={loginMode}
+                    handleLogin={handleLogin}
+                    handleClose={handleCloseLoginForm}
+                    loginForm={loginForm}
+                    setLoginForm={setLoginForm}
+                    loading={loading}
+                />
+            </>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="min-h-screen bg-slate-100">
             <nav className="bg-white shadow-md">
                 <div className="max-w-7xl mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
                         <h1 className="text-2xl font-bold text-gray-800">Student Feedback Portal</h1>
-                        <div className="flex gap-2">
-                            <button
-                                onClick={() => setActiveTab('courses')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'courses'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
-                            >
-                                Courses
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('analytics')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'analytics'
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
-                            >
-                                Analytics
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('admin')}
-                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'admin'
-                                    ? 'bg-purple-600 text-white'
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
-                            >
-                                Admin
+                        <div className="flex items-center gap-2">
+                            <button onClick={() => setActiveTab('courses')} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'courses' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>Courses</button>
+                            <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'analytics' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>Analytics</button>
+                            {userRole === 'admin' && (
+                                <button onClick={() => setActiveTab('admin')} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${activeTab === 'admin' ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>Admin</button>
+                            )}
+                            <button onClick={handleLogout} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors flex items-center gap-2 font-semibold">
+                                <LogOut size={16} /> Logout
                             </button>
                         </div>
                     </div>
@@ -712,31 +734,16 @@ const StudentFeedbackPortal = () => {
             </nav>
 
             <main className="max-w-7xl mx-auto px-4 py-8">
-                {activeTab === 'courses' && <CoursesView {...tabProps} />}
-                {activeTab === 'analytics' && <AnalyticsView selectedCourse={selectedCourse} courses={courses} setActiveTab={setActiveTab} />}
-                {activeTab === 'admin' && <AdminView {...tabProps} />}
+                {activeTab === 'courses' && <CoursesView {...viewProps} />}
+                {activeTab === 'analytics' && <AnalyticsView selectedCourse={selectedCourse} courses={courses} setActiveTab={setActiveTab} setSelectedCourse={setSelectedCourse} />}
+                {activeTab === 'admin' && userRole === 'admin' && <AdminView {...viewProps} />}
             </main>
 
-            <FeedbackFormModal
-                show={showFeedbackForm}
-                courses={courses}
-                feedbackForm={feedbackForm}
-                setFeedbackForm={setFeedbackForm}
-                handleSubmit={handleSubmitFeedback}
-                handleClose={handleCloseFeedbackForm}
-                loading={loading}
-            />
-            <CourseFormModal
-                show={showCourseForm}
-                editMode={editMode}
-                courseForm={courseForm}
-                setCourseForm={setCourseForm}
-                handleSave={handleSaveCourse}
-                handleClose={handleCloseCourseForm}
-                loading={loading}
-            />
+            <FeedbackFormModal show={showFeedbackForm} courses={courses} feedbackForm={feedbackForm} setFeedbackForm={setFeedbackForm} handleSubmit={handleSubmitFeedback} handleClose={handleCloseFeedbackForm} loading={loading} />
+            <CourseFormModal show={showCourseForm} editMode={editMode} courseForm={courseForm} setCourseForm={setCourseForm} handleSave={handleSaveCourse} handleClose={handleCloseCourseForm} loading={loading} />
         </div>
     );
 };
 
 export default StudentFeedbackPortal;
+

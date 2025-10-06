@@ -151,39 +151,6 @@ Frontend ← JSON Response ← Backend Controller
 - **Environment variables:** Configured for production  
 - **CORS:** Whitelisted Vercel domain  
 
----
-
-## 🧠 Challenges & Solutions
-
-| Challenge | Cause | Solution |
-|------------|--------|-----------|
-| Input losing focus | State re-renders | Used `useCallback` + functional `setState` |
-| CORS errors in production | Cross-origin requests | Added Vercel domain to CORS whitelist |
-| Stats not updating immediately | Cached API response | Triggered data refetch post submission |
-
----
-
-## 🔐 Production-Ready Aspects
-
-✅ Admin authentication (local demo)  
-✅ SQL injection prevention (TypeORM)  
-✅ Input validation (class-validator)  
-✅ Responsive design (Tailwind grid)  
-✅ Database indexes for performance  
-✅ Modular NestJS architecture  
-
----
-
-## 🔮 Future Enhancements
-
-- JWT-based authentication  
-- Email alerts for feedback  
-- Export analytics as PDF  
-- Multi-role user management  
-- Pagination for large data  
-- Real-time WebSocket updates  
-
----
 
 ## 👥 Contributors
 
