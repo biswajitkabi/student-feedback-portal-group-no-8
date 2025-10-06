@@ -187,10 +187,10 @@ Frontend ← JSON Response ← Backend Controller
 
 ## 👥 Contributors
 
- **Biswajit Kabi** 
- **Priya Jha** 
- **Aditya Shrivastava** 
- **Vivek Saini**  
+ - **Biswajit Kabi** 
+ - **Priya Jha** 
+ - **Aditya Shrivastava** 
+ - **Vivek Saini**  
 
 
 
